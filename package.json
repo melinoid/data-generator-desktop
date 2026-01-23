@@ -1,6 +1,6 @@
 {
   "name": "test-data-generator",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "main": "src/main.js",
   "repository": {
     "type": "git",

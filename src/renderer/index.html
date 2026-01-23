@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Test Data Generator v1.4.9</title>
+    <script>
+      (function () {
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        const isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = savedTheme === 'dark' || (savedTheme === 'system' && isSystemDark);
+        if (isDark) {
+          document.documentElement.classList.add('dark-theme');
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="controls">
+        <div class="row">
+          <label>Название файла</label>
+          <input id="filenameBase" type="text" placeholder="Введите название" value="data" />
+        </div>
+        <div class="row">
+          <label>Количество строк</label>
+          <input id="rowsCount" type="number" min="1" value="10" />
+        </div>
+        <div class="row">
+          <label>Формат</label>
+          <select id="format">
+            <option value="xlsx">XLSX</option>
+            <option value="csv">CSV</option>
+            <option value="xml">XML</option>
+            <option value="json">JSON</option>
+            <option value="qvd">QVD</option>
+          </select>
+        </div>
+        <div class="row" id="separatorRow" style="display: none">
+          <label>Разделитель (CSV)</label>
+          <input id="csvSeparator" type="text" maxlength="7" value="," />
+        </div>
+        <div class="row">
+          <label>Язык генерации</label>
+          <select id="language">
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Тип генерации</label>
+          <select id="generationType">
+            <option value="advanced">Расширенная (Медленная)</option>
+            <option value="simple" selected>Упрощённая (Быстрая)</option>
+          </select>
+        </div>
+        <div class="row full-width-row">
+          <label>Файлы с исходными данными (CSV/JSON/XML/QVD/XLSX)</label>
+          <div class="file-input-wrapper">
+            <button type="button" id="dataSourceFileBtn" class="file-select-btn">Выберите файлы</button>
+            <input
+              id="dataSourceFileInput"
+              type="file"
+              accept=".csv,.json,.xml,.qvd,.xlsx"
+              multiple
+              style="display: none"
+            />
+            <div id="dataSourceFileList" class="data-source-file-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="columns">
+        <div class="columns-header">
+          <div class="columns-title-container">
+            <span>Столбцы</span>
+            <button id="helpBtn" type="button" class="help-btn" title="Помощь по настройке столбцов">?</button>
+          </div>
+          <button id="addColumn">Добавить столбец</button>
+        </div>
+        <div id="columnsList" class="columns-list"></div>
+      </div>
+      <div class="preview-section">
+        <div class="preview-header">
+          <span>Предпросмотр данных (первые 10 строк)</span>
+          <button id="refreshPreview">Обновить предпросмотр</button>
+        </div>
+        <div class="preview-container">
+          <div class="preview-table-wrapper">
+            <table id="previewTable" class="preview-table">
+              <tbody>
+                <tr>
+                  <td style="text-align: center; color: #999; padding: 20px">
+                    Настройте столбцы и нажмите "Обновить предпросмотр"
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fixed-actions">
+      <button id="saveSettingsBtn">Сохранить настройки</button>
+      <button id="loadSettingsBtn">Загрузить настройки</button>
+      <button id="themeToggleBtn">🌓 Системная</button>
+    </div>
+    <div class="action-buttons">
+      <button id="generateBtn">Сгенерировать файл</button>
+    </div>
+
+    <div id="helpModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Инструкция</h3>
+          <button id="closeHelpModal" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="helpContent" class="markdown-content">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

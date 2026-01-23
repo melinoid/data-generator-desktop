@@ -1,0 +1,59 @@
+{
+  "name": "test-data-generator",
+  "version": "1.4.9",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder --win --mac"
+  },
+  "keywords": [],
+  "author": "Eugene Lopan",
+  "email": "e.lopan@pix.ru",
+  "license": "ISC",
+  "description": "Генератор тестовых данных",
+  "devDependencies": {
+    "electron": "^29.4.6",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.2.0",
+    "exceljs": "^4.4.0",
+    "marked": "^4.3.0",
+    "qvd4js": "^1.0.5",
+    "xlsx": "^0.18.5",
+    "xmlbuilder2": "^3.1.1"
+  },
+  "build": {
+    "appId": "com.example.test-data-generator",
+    "asar": true,
+    "files": [
+      "src/**",
+      "package.json"
+    ],
+    "productName": "Data Generator",
+    "artifactName": "${productName} ${version} ${arch}.${ext}",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64", "universal"]
+        }
+      ],
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "${productName} ${version} ${arch}.exe"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+ "ru":{
+  "RU":["Улица Ленина","Улица Гагарина","Советская улица","Улица Пушкина","Улица Кирова","Проспект Мира"],
+  "ES":["Улица Майор","Проспект Конституции","Королевская улица","Прогулочная аллея Кастельяна","Улица Сан-Хуан","Проспект Средиземноморья"],
+  "US":["Главная улица","Бродвей","Улица Вашингтона","Клённая улица","Дубовая улица","Улица Вязов"]
+ },
+ "en":{
+  "RU":["Lenina Street","Gagarina Street","Sovetskaya Street","Pushkina Street","Kirova Street","Mira Avenue"],
+  "ES":["Calle Mayor","Avenida de la Constitución","Calle Real","Paseo de la Castellana","Calle San Juan","Avenida del Mediterráneo"],
+  "US":["Main Street","Broadway","Washington Street","Maple Street","Oak Street","Elm Street"]
+ },
+ "es":{
+  "RU":["Lenina Street","Gagarina Street","Sovetskaya Street","Pushkina Street","Kirova Street","Mira Avenue"],
+  "ES":["Calle Mayor","Avenida de la Constitución","Calle Real","Paseo de la Castellana","Calle San Juan","Avenida del Mediterráneo"],
+  "US":["Main Street","Broadway","Washington Street","Maple Street","Oak Street","Elm Street"]
+ }
+}

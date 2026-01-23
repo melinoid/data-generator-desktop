@@ -1,0 +1,17 @@
+{
+ "ru":{
+  "RU":"Россия",
+  "ES":"Испания",
+  "US":"Соединенные Штаты Америки"
+ },
+ "en":{
+  "RU":"Russia",
+  "ES":"Spain",
+  "US":"United States of America"
+ },
+ "es":{
+  "RU":"Rusia",
+  "ES":"España",
+  "US":"Estados Unidos"
+ }
+}

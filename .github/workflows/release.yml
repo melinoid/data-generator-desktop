@@ -77,12 +77,14 @@ jobs:
       - name: Install deps
         run: npm i
 
-      - name: Build & publish
+      - name: Build & publish (Windows)
+        if: runner.os == 'Windows'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            npx electron-builder --publish always --win --portable
-          else
-            npx electron-builder --publish always --mac
-          fi
+        run: npx electron-builder --publish always --win --portable
+
+      - name: Build & publish (macOS)
+        if: runner.os == 'macOS'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish always --mac

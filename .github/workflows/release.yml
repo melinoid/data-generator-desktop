@@ -34,8 +34,8 @@ jobs:
 
       - name: Configure git user
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
 
       - name: Bump patch version
         id: bump
@@ -63,10 +63,10 @@ jobs:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout tag
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.bump-version-and-tag.outputs.tag }}
+          ref: main
           fetch-depth: 0
 
       - name: Setup Node

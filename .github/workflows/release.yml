@@ -43,7 +43,7 @@ jobs:
           npm i
           npm version patch --no-git-tag-version
           node scripts/syncVersion.js
-          git add package.json package-lock.json README.md src/renderer/index.html
+          git add package.json README.md src/renderer/index.html
           VERSION="$(node -p "require('./package.json').version")"
           git commit -m "chore(release): v$VERSION"
           git tag "v$VERSION"
@@ -73,7 +73,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install deps
         run: npm ci

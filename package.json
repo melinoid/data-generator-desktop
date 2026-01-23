@@ -1,6 +1,6 @@
 {
   "name": "test-data-generator",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "main": "src/main.js",
   "repository": {
     "type": "git",
@@ -43,7 +43,11 @@
       "target": [
         {
           "target": "zip",
-          "arch": ["x64", "arm64", "universal"]
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
         }
       ],
       "icon": "build/icon.icns"
@@ -52,7 +56,10 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "build/icon.ico"

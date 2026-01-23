@@ -1962,6 +1962,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 200);
   renderDataSourceFileList();
 
+  // Автоматическая проверка обновлений после загрузки страницы
+  setTimeout(() => {
+    checkForUpdatesOnLoad();
+  }, 1500);
+
   // Обработчик копирования из таблицы предпросмотра с уведомлением
   document.getElementById('previewTable')?.addEventListener('click', async e => {
     const cell = e.target.closest('td');
@@ -2025,6 +2030,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   });
 });
+
+// Хранение оригинального заголовка окна
+let originalWindowTitle = document.title;
+let hasUpdateInTitle = false;
+
+function markTitleAsHasUpdate() {
+  if (hasUpdateInTitle) return;
+  originalWindowTitle = document.title || originalWindowTitle || 'Test Data Generator';
+  document.title = `${originalWindowTitle} - Доступна новая версия!`;
+  hasUpdateInTitle = true;
+}
+
+function restoreOriginalTitle() {
+  if (!hasUpdateInTitle) return;
+  document.title = originalWindowTitle || 'Test Data Generator';
+  hasUpdateInTitle = false;
+}
+
+// Автоматическая проверка обновлений при загрузке страницы
+async function checkForUpdatesOnLoad() {
+  try {
+    if (!window.api?.checkForUpdates) return;
+
+    const result = await window.api.checkForUpdates();
+
+    if (result?.ok && result?.hasUpdate && result?.shouldShow) {
+      showUpdateModal(result);
+      markTitleAsHasUpdate();
+    }
+  } catch (e) {
+    console.error('Ошибка проверки обновлений:', e);
+    // Тихая ошибка - не показываем пользователю при автопроверке
+  }
+}
+
+// Показ модального окна обновления
+function showUpdateModal(updateInfo) {
+  const modal = document.getElementById('updateModal');
+  const messageEl = document.getElementById('updateMessage');
+  const downloadBtn = document.getElementById('downloadUpdateBtn');
+  const closeBtn = document.getElementById('closeUpdateBtn');
+  const closeModalBtn = document.getElementById('closeUpdateModal');
+
+  if (!modal || !messageEl || !downloadBtn || !closeBtn) return;
+
+  const currentVersion = updateInfo.currentVersion || 'неизвестна';
+  const latestVersion = updateInfo.latestTag || updateInfo.latestVersion || 'неизвестна';
+
+  messageEl.textContent = `Доступна новая версия: ${latestVersion}\nТекущая версия: ${currentVersion}`;
+
+  // Обработчик скачивания
+  downloadBtn.onclick = async () => {
+    if (updateInfo.latestUrl && window.api?.openExternal) {
+      await window.api.openExternal(updateInfo.latestUrl);
+    }
+    modal.style.display = 'none';
+  };
+
+  // Обработчики закрытия
+  const closeModal = () => {
+    modal.style.display = 'none';
+    restoreOriginalTitle();
+  };
+
+  closeBtn.onclick = closeModal;
+  closeModalBtn.onclick = closeModal;
+
+  // Закрытие по клику вне модального окна
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  };
+
+  modal.style.display = 'flex';
+}
 
 document.addEventListener('keydown', e => {
   const isMac = navigator.platform.toUpperCase().includes('MAC');

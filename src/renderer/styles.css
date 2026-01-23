@@ -816,6 +816,58 @@ html.dark-theme .help-btn:hover {
   text-decoration: underline;
 }
 
+/* Модальное окно обновления */
+.update-modal-content {
+  max-width: 500px;
+}
+
+.update-modal-content .modal-body {
+  text-align: center;
+}
+
+.update-modal-content #updateMessage {
+  margin-bottom: 24px;
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.update-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--btn-success);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--btn-success-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-row);
+}
+
 /* Всплывающее уведомление при копировании из таблицы предпросмотра */
 .copy-tooltip {
   position: fixed;

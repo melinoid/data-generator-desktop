@@ -2,6 +2,10 @@
   "name": "test-data-generator",
   "version": "1.4.9",
   "main": "src/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/melinoid/data-generator-desctop.git"
+  },
   "scripts": {
     "dev": "electron .",
     "pack": "electron-builder --dir",
@@ -21,6 +25,7 @@
     "exceljs": "^4.4.0",
     "marked": "^4.3.0",
     "qvd4js": "^1.0.5",
+    "semver": "^7.6.3",
     "xlsx": "^0.18.5",
     "xmlbuilder2": "^3.1.1"
   },
@@ -54,6 +59,11 @@
     },
     "portable": {
       "artifactName": "${productName} ${version} ${arch}.exe"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github"
+      }
+    ]
   }
 }

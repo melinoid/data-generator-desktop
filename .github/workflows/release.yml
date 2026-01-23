@@ -81,10 +81,10 @@ jobs:
         if: runner.os == 'Windows'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --publish always --win --portable
+        run: npx electron-builder --win --mac
 
       - name: Build & publish (macOS)
         if: runner.os == 'macOS'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --publish always --mac
+        run: npx electron-builder --mac

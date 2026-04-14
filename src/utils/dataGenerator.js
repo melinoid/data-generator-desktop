@@ -41,6 +41,7 @@ const TYPES = {
   PHONE: 'phone',
   CUSTOM_LIST: 'custom_list',
   RANDOM_LENGTH_STRING: 'random_length_string',
+  TRANSFORMATION: 'transformation',
   FILE_COLUMN: 'file_column',
 };
 
@@ -138,6 +139,23 @@ function sanitizeHeader(name, index) {
  */
 function getRandomValueFromArray(array) {
   return array[Math.floor(paretoRandom(0, array.length - 1))];
+}
+
+function evaluateTransformationFormula(formula, row) {
+  const expression = String(formula || '').trim();
+  if (!expression) return '';
+
+  const col = name => row[String(name)] ?? '';
+
+  try {
+    // JS-выражение с доступом к текущей строке через row/col:
+    // row["A"] + row["B"] или Number(col("A")) * 10
+    const evaluator = new Function('row', 'col', `"use strict"; return (${expression});`);
+    const value = evaluator(row, col);
+    return value ?? '';
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -1289,10 +1307,23 @@ function buildRowObject(
         row[header] = baseText.substring(0, randomLength);
         break;
       }
+      case TYPES.TRANSFORMATION:
+        row[header] = '';
+        break;
       default:
         row[header] = '';
     }
     columnValues[i] = row[header];
+  }
+
+  // Применение формул после генерации всех значений в строке
+  for (let i = 0; i < columns.length; i++) {
+    const col = columns[i];
+    if (col.type !== TYPES.TRANSFORMATION) continue;
+    const header = headers[i];
+    const transformedValue = evaluateTransformationFormula(col.transformFormula, row);
+    row[header] = transformedValue;
+    columnValues[i] = transformedValue;
   }
 
   // Применение вероятности null

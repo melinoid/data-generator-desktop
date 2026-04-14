@@ -84,7 +84,6 @@ async function checkLatestGithubRelease({ repo, currentVersion, allowPrerelease 
     return {
       ok: false,
       reason: 'bad_version',
-      latestTag: tagName || null,
       latestUrl: htmlUrl || null,
     };
   }
@@ -94,7 +93,6 @@ async function checkLatestGithubRelease({ repo, currentVersion, allowPrerelease 
       ok: true,
       hasUpdate: false,
       latestVersion: latest,
-      latestTag: tagName,
       latestUrl: htmlUrl || null,
       isPrerelease: true,
     };
@@ -104,25 +102,11 @@ async function checkLatestGithubRelease({ repo, currentVersion, allowPrerelease 
     ok: true,
     hasUpdate: semver.gt(latest, current),
     latestVersion: latest,
-    latestTag: tagName,
     latestUrl: htmlUrl || null,
   };
-}
-
-function shouldNotify({ statePath, latestVersion }) {
-  const state = readJsonSafe(statePath) || {};
-  if (state.lastNotifiedVersion && state.lastNotifiedVersion === latestVersion) return false;
-  return true;
-}
-
-function markNotified({ statePath, latestVersion }) {
-  const state = readJsonSafe(statePath) || {};
-  writeJsonSafe(statePath, { ...state, lastNotifiedVersion: latestVersion, lastNotifiedAt: new Date().toISOString() });
 }
 
 module.exports = {
   getRepoSlugFromPackageJson,
   checkLatestGithubRelease,
-  shouldNotify,
-  markNotified,
 };

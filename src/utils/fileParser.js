@@ -3,7 +3,7 @@ const xlsx = require('xlsx');
 
 /**
  * Парсит QVD-файл в объект с заголовками и строками.
- * @param {Buffer} buffer - содержимое QVD-файла
+ * @param {Buffer} buffer - содержимое QVD-файла.
  * @returns {{ headers: string[], rows: string[][] }}
  */
 async function parseQVD(buffer) {
@@ -36,13 +36,8 @@ async function parseQVD(buffer) {
 }
 
 /**
- * Парсит XLSX-файл в объект с заголовками и строками.
- * @param {Buffer} buffer - содержимое XLSX-файла
- * @returns {{ headers: string[], rows: string[][] }}
- */
-/**
  * Парсит XLSX-файл, возвращая данные по всем листам.
- * @param {Buffer} buffer - содержимое XLSX-файла
+ * @param {Buffer} buffer - содержимое XLSX-файла.
  * @returns {{ name: string, key: string, headers: string[], rows: string[][] }[]}
  */
 function parseXLSX(buffer) {
@@ -123,7 +118,7 @@ function parseXLSX(buffer) {
 
 /**
  * Парсит CSV-строку в объект с заголовками и строками.
- * @param {string} text - содержимое CSV-файла
+ * @param {string} text - содержимое CSV-файла.
  * @returns {{ headers: string[], rows: string[][] }}
  */
 function parseCSV(text) {
@@ -189,7 +184,7 @@ function parseCSV(text) {
 
 /**
  * Парсит JSON-строку в объект с заголовками и строками.
- * @param {string} text - содержимое JSON-файла
+ * @param {string} text - содержимое JSON-файла.
  * @returns {{ headers: string[], rows: string[][] }}
  */
 function parseJSON(text) {
@@ -226,7 +221,7 @@ function parseJSON(text) {
   const rows = data.map(obj => {
     if (!obj || typeof obj !== 'object') return headers.map(() => '');
     return headers.map(key => {
-      // Для случая, когда ключ — Column N, но исходный объект не имеет такого ключа
+      // Для случая, когда ключ - Column N, но исходный объект не имеет такого ключа
       // (это может произойти при несовпадении структуры), возвращаем ''
       if (key.startsWith('Column ') && !obj.hasOwnProperty(key)) {
         // Попытка сопоставить по индексу: берём значения по порядку
@@ -246,8 +241,8 @@ function parseJSON(text) {
 
 /**
  * Парсит XML-строку в объект с заголовками и строками.
- * Ожидается структура: <rows><row><col1>...</col1>...</row></rows>
- * @param {string} text - содержимое XML-файла
+ * Ожидается структура: <rows><row><col1>...</col1>...</row></rows>.
+ * @param {string} text - содержимое XML-файла.
  * @returns {{ headers: string[], rows: string[][] }}
  */
 function parseXML(text) {

@@ -4,7 +4,7 @@
   "main": "src/main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/melinoid/data-generator-desctop.git"
+    "url": "https://github.com/melinoid/data-generator-desktop.git"
   },
   "scripts": {
     "dev": "electron .",
@@ -66,11 +66,6 @@
     },
     "portable": {
       "artifactName": "${productName} ${version} ${arch}.exe"
-    },
-    "publish": [
-      {
-        "provider": "github"
-      }
-    ]
+    }
   }
 }

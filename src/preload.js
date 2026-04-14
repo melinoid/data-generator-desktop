@@ -1,6 +1,7 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { ipcRenderer } = require('electron');
+const path = require('path');
 
-contextBridge.exposeInMainWorld('api', {
+window.api = {
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
 
@@ -12,4 +13,8 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
 
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
-});
+
+  path: {
+    join: (...args) => path.join(...args),
+  },
+};

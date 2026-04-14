@@ -1,4 +1,3 @@
-const { ipcRenderer } = require('electron');
 const { marked } = require('marked');
 const {
   writeCSVStream,
@@ -254,6 +253,7 @@ function createCustomTypeSelect(initialValue = TYPES.ID_AUTO, onValueChange = nu
     'Текстовые данные': [
       { value: TYPES.RANDOM_LENGTH_STRING, text: 'Строка случайной длины' },
       { value: TYPES.CUSTOM_LIST, text: 'Кастомный список' },
+      { value: TYPES.TRANSFORMATION, text: 'Преобразования' },
       { value: TYPES.EMPTY_STRING, text: 'Всегда пустая строка' },
       { value: TYPES.NULL, text: 'Всегда null' },
       { value: TYPES.NAUGHTY_STRINGS, text: 'Капризные строки' },
@@ -287,7 +287,7 @@ function createCustomTypeSelect(initialValue = TYPES.ID_AUTO, onValueChange = nu
     ],
   };
 
-  // === Группы файлов ===
+  // Группы файлов
   const fileGroups = [];
   if (dataSourceCache.length > 0) {
     dataSourceCache.forEach(source => {
@@ -565,7 +565,8 @@ function updateFieldVisibility(row) {
   show(13, t === TYPES.CUSTOM_LIST || isFileColumn); // custom mode
   show(14, t === TYPES.RANDOM_LENGTH_STRING); // base text
   show(15, t === TYPES.RANDOM_LENGTH_STRING); // max length
-  if (params[16]) params[16].style.display = 'block'; // null prob
+  show(16, t === TYPES.TRANSFORMATION); // transformation formula
+  if (params[17]) params[17].style.display = 'block'; // null prob
 }
 
 // Обновление мультивыбора стран при смене режима генерации
@@ -1134,6 +1135,15 @@ function createColumnRow(initial = {}) {
   randomStringLengthInput.min = 0;
   const maxLengthGroup = createParamGroup('Макс. длина', randomStringLengthInput);
 
+  // Параметры преобразования
+  const transformationFormulaTextarea = document.createElement('textarea');
+  transformationFormulaTextarea.placeholder = 'Пример: row["столбец1"] + row["столбец2"] или Number(col("сумма")) * 10';
+  transformationFormulaTextarea.className = 'transform-formula-textarea';
+  transformationFormulaTextarea.rows = 3;
+  transformationFormulaTextarea.cols = 24;
+  transformationFormulaTextarea.value = initial.transformFormula || '';
+  const transformationFormulaGroup = createParamGroup('Формула', transformationFormulaTextarea);
+
   // --- Вероятность null ---
   const nullProbContainer = document.createElement('div');
   nullProbContainer.style.display = 'flex';
@@ -1173,6 +1183,7 @@ function createColumnRow(initial = {}) {
     customModeGroup,
     baseTextGroup,
     maxLengthGroup,
+    transformationFormulaGroup,
     nullProbGroup
   );
   row.appendChild(paramsContainer);
@@ -1201,6 +1212,7 @@ function createColumnRow(initial = {}) {
     showGroup(customModeGroup, t === TYPES.CUSTOM_LIST || isFileColumn);
     showGroup(baseTextGroup, t === TYPES.RANDOM_LENGTH_STRING);
     showGroup(maxLengthGroup, t === TYPES.RANDOM_LENGTH_STRING);
+    showGroup(transformationFormulaGroup, t === TYPES.TRANSFORMATION);
     nullProbGroup.style.display = 'block';
   }
 
@@ -1457,6 +1469,8 @@ function readConfigFromUI() {
     } else if (type === TYPES.RANDOM_LENGTH_STRING) {
       config.baseText = params.querySelector('.random-string-base')?.value || '';
       config.maxLength = Number(params.querySelector('.random-string-length')?.value) || 10;
+    } else if (type === TYPES.TRANSFORMATION) {
+      config.transformFormula = params.querySelector('.transform-formula-textarea')?.value || '';
     }
 
     const nullProb = params.querySelector('.null-probability');
@@ -1638,7 +1652,7 @@ async function handleGenerate() {
   const baseName = filenameBaseInput?.value || 'data';
   const defaultFilename = buildFilename(baseName, config.format);
 
-  const { canceled, filePath } = await ipcRenderer.invoke('show-save-dialog', {
+  const { canceled, filePath } = await window.api.showSaveDialog({
     defaultPath: defaultFilename,
     filters: extMap[config.format],
   });
@@ -1678,7 +1692,7 @@ async function handleGenerate() {
       updateTitle(0);
       alert('Файл сохранён: ' + filePath);
       try {
-        await ipcRenderer.invoke('show-item-in-folder', filePath);
+        await window.api.showItemInFolder(filePath);
       } catch (err) {
         console.warn('Не удалось открыть проводник:', err);
       }
@@ -1879,13 +1893,13 @@ function applyConfig(config) {
 saveSettingsBtn?.addEventListener('click', async () => {
   const config = getFullConfig();
   const filename = buildSettingsFilename(config);
-  const { canceled, filePath } = await ipcRenderer.invoke('show-save-dialog', {
+  const { canceled, filePath } = await window.api.showSaveDialog({
     defaultPath: filename,
     filters: [{ name: 'JSON Settings', extensions: ['json'] }],
   });
   if (canceled || !filePath) return;
   try {
-    await ipcRenderer.invoke('write-file', filePath, JSON.stringify(config, null, 2));
+    await window.api.writeFile(filePath, JSON.stringify(config, null, 2));
     try {
       localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(config));
     } catch (err) {
@@ -1901,13 +1915,13 @@ saveSettingsBtn?.addEventListener('click', async () => {
 });
 
 loadSettingsBtn?.addEventListener('click', async () => {
-  const { canceled, filePaths } = await ipcRenderer.invoke('show-open-dialog', {
+  const { canceled, filePaths } = await window.api.showOpenDialog({
     filters: [{ name: 'JSON Settings', extensions: ['json'] }],
     properties: ['openFile'],
   });
   if (canceled || !filePaths || filePaths.length === 0) return;
   try {
-    const content = await ipcRenderer.invoke('read-file', filePaths[0]);
+    const content = await window.api.readFile(filePaths[0]);
     const config = JSON.parse(content);
     applyConfig(config);
     try {
@@ -2038,30 +2052,24 @@ let hasUpdateInTitle = false;
 function markTitleAsHasUpdate() {
   if (hasUpdateInTitle) return;
   originalWindowTitle = document.title || originalWindowTitle || 'Test Data Generator';
-  document.title = `${originalWindowTitle} - Доступна новая версия!`;
+  document.title = `${originalWindowTitle} - Доступно обновление!`;
   hasUpdateInTitle = true;
-}
-
-function restoreOriginalTitle() {
-  if (!hasUpdateInTitle) return;
-  document.title = originalWindowTitle || 'Test Data Generator';
-  hasUpdateInTitle = false;
 }
 
 // Автоматическая проверка обновлений при загрузке страницы
 async function checkForUpdatesOnLoad() {
   try {
-    if (!window.api?.checkForUpdates) return;
+    if (!window.api?.checkForUpdates) {
+      return;
+    }
 
     const result = await window.api.checkForUpdates();
 
-    if (result?.ok && result?.hasUpdate && result?.shouldShow) {
+    if (result?.ok && result?.hasUpdate) {
       showUpdateModal(result);
       markTitleAsHasUpdate();
     }
   } catch (e) {
-    console.error('Ошибка проверки обновлений:', e);
-    // Тихая ошибка - не показываем пользователю при автопроверке
   }
 }
 
@@ -2070,15 +2078,13 @@ function showUpdateModal(updateInfo) {
   const modal = document.getElementById('updateModal');
   const messageEl = document.getElementById('updateMessage');
   const downloadBtn = document.getElementById('downloadUpdateBtn');
-  const closeBtn = document.getElementById('closeUpdateBtn');
   const closeModalBtn = document.getElementById('closeUpdateModal');
 
-  if (!modal || !messageEl || !downloadBtn || !closeBtn) return;
+  if (!modal || !messageEl || !downloadBtn) return;
 
-  const currentVersion = updateInfo.currentVersion || 'неизвестна';
-  const latestVersion = updateInfo.latestTag || updateInfo.latestVersion || 'неизвестна';
+  const latestVersion = updateInfo.latestVersion || 'неизвестна';
 
-  messageEl.textContent = `Доступна новая версия: ${latestVersion}\nТекущая версия: ${currentVersion}`;
+  messageEl.textContent = `Доступна новая версия: ${latestVersion}\n`;
 
   // Обработчик скачивания
   downloadBtn.onclick = async () => {
@@ -2091,10 +2097,8 @@ function showUpdateModal(updateInfo) {
   // Обработчики закрытия
   const closeModal = () => {
     modal.style.display = 'none';
-    restoreOriginalTitle();
   };
 
-  closeBtn.onclick = closeModal;
   closeModalBtn.onclick = closeModal;
 
   // Закрытие по клику вне модального окна
@@ -2162,8 +2166,8 @@ document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
 // Справка (из README.md)
 async function loadHelpMarkdown() {
   try {
-    const helpPath = require('path').join(__dirname, '../../README.md');
-    const content = await ipcRenderer.invoke('read-file', helpPath);
+    const helpPath = window.api.path.join(__dirname, '../../README.md');
+    const content = await window.api.readFile(helpPath);
     const html = marked.parse(content);
     document.getElementById('helpContent').innerHTML = html;
   } catch (err) {

@@ -539,34 +539,40 @@ function createCountriesMultiSelect(selectedCountries = ['all'], countriesData, 
   };
 }
 
+const PARAM_VISIBILITY_RULES = {
+  min: type => type === TYPES.INTEGER || type === TYPES.FLOAT,
+  max: type => type === TYPES.INTEGER || type === TYPES.FLOAT,
+  precision: type => type === TYPES.FLOAT,
+  dateFrom: type => type === TYPES.DATE,
+  dateTo: type => type === TYPES.DATE,
+  dateFormat: type => type === TYPES.DATE,
+  colorFormat: type => type === TYPES.COLOR,
+  transparency: type => type === TYPES.COLOR,
+  ipFormat: type => type === TYPES.IP,
+  macFormat: type => type === TYPES.MAC_ADDRESS,
+  phoneFormat: type => type === TYPES.PHONE,
+  customList: type => type === TYPES.CUSTOM_LIST,
+  customSeparator: type => type === TYPES.CUSTOM_LIST,
+  customMode: type => type === TYPES.CUSTOM_LIST || (type.startsWith('file_') && type.includes('_col_')),
+  baseText: type => type === TYPES.RANDOM_LENGTH_STRING,
+  maxLength: type => type === TYPES.RANDOM_LENGTH_STRING,
+  transformationFormula: type => type === TYPES.TRANSFORMATION,
+  nullProbability: () => true,
+};
+
 function updateFieldVisibility(row) {
+  if (!row?.__typeSelect) return;
   const t = row.__typeSelect.getValue();
-  const params = row.querySelectorAll('.param-group');
-  const isFileColumn = t.startsWith('file_') && t.includes('_col_');
-
-  const show = (idx, cond) => {
-    if (params[idx]) params[idx].style.display = cond ? 'block' : 'none';
-  };
-
-  show(0, t === TYPES.INTEGER || t === TYPES.FLOAT); // min
-  show(1, t === TYPES.INTEGER || t === TYPES.FLOAT); // max
-  show(2, t === TYPES.FLOAT); // precision
-  show(3, t === TYPES.DATE); // date from
-  show(4, t === TYPES.DATE); // date to
-  show(5, t === TYPES.DATE); // date format
-  show(6, t === TYPES.COLOR); // color format
-  show(7, t === TYPES.COLOR); // transparency
-  row.querySelector('.countries-multiselect-container').style.display = t === TYPES.REGION ? 'block' : 'none';
-  show(8, t === TYPES.IP); // ip format
-  show(9, t === TYPES.MAC_ADDRESS); // mac format
-  show(10, t === TYPES.PHONE); // phone format
-  show(11, t === TYPES.CUSTOM_LIST); // custom list
-  show(12, t === TYPES.CUSTOM_LIST); // custom separator
-  show(13, t === TYPES.CUSTOM_LIST || isFileColumn); // custom mode
-  show(14, t === TYPES.RANDOM_LENGTH_STRING); // base text
-  show(15, t === TYPES.RANDOM_LENGTH_STRING); // max length
-  show(16, t === TYPES.TRANSFORMATION); // transformation formula
-  if (params[17]) params[17].style.display = 'block'; // null prob
+  const params = row.querySelectorAll('.params-container .param-group[data-param-key]');
+  params.forEach(group => {
+    const key = group.dataset.paramKey;
+    const isVisible = PARAM_VISIBILITY_RULES[key] ? PARAM_VISIBILITY_RULES[key](t) : true;
+    group.style.display = isVisible ? 'block' : 'none';
+  });
+  const countriesContainer = row.querySelector('.countries-multiselect-container');
+  if (countriesContainer) {
+    countriesContainer.style.display = t === TYPES.REGION ? 'block' : 'none';
+  }
 }
 
 // Обновление мультивыбора стран при смене режима генерации
@@ -836,9 +842,10 @@ function createColumnRow(initial = {}) {
   });
 
   // Вспомогательная функция для создания блоков параметров
-  function createParamGroup(labelText, element) {
+  function createParamGroup(labelText, element, paramKey = null) {
     const group = document.createElement('div');
     group.className = 'param-group';
+    if (paramKey) group.dataset.paramKey = paramKey;
     group.style.display = 'block';
     const label = document.createElement('label');
     label.textContent = labelText;
@@ -876,7 +883,7 @@ function createColumnRow(initial = {}) {
 
   // Тип данных
   const typeSelectWrapper = createCustomTypeSelect(initial.type || TYPES.ID_AUTO, () => {
-    updateFieldVisibility();
+    updateFieldVisibility(row);
     updateInheritSelectors();
     updatePreview();
     saveToHistory();
@@ -959,7 +966,7 @@ function createColumnRow(initial = {}) {
   minInput.placeholder = 'Минимум';
   minInput.className = 'range-input';
   minInput.value = initial.min ?? 0;
-  const minGroup = createParamGroup('Минимум', minInput);
+  const minGroup = createParamGroup('Минимум', minInput, 'min');
 
   const maxInput = document.createElement('input');
   maxInput.type = 'number';
@@ -967,14 +974,14 @@ function createColumnRow(initial = {}) {
   maxInput.placeholder = 'Максимум';
   maxInput.className = 'range-input';
   maxInput.value = initial.max ?? 1000;
-  const maxGroup = createParamGroup('Максимум', maxInput);
+  const maxGroup = createParamGroup('Максимум', maxInput, 'max');
 
   const precisionInput = document.createElement('input');
   precisionInput.type = 'number';
   precisionInput.placeholder = 'Знаков после точки';
   precisionInput.className = 'precision-input';
   precisionInput.value = initial.precision ?? 5;
-  const precisionGroup = createParamGroup('Точность', precisionInput);
+  const precisionGroup = createParamGroup('Точность', precisionInput, 'precision');
 
   // Параметры даты
   const dateFromInput = document.createElement('input');
@@ -983,13 +990,13 @@ function createColumnRow(initial = {}) {
   dateFromInput.value = initial.fromDate
     ? formatDateForInput(new Date(initial.fromDate))
     : formatDateForInput(new Date(2000, 0, 1));
-  const dateFromGroup = createParamGroup('Дата от', dateFromInput);
+  const dateFromGroup = createParamGroup('Дата от', dateFromInput, 'dateFrom');
 
   const dateToInput = document.createElement('input');
   dateToInput.type = 'date';
   dateToInput.className = 'date-input';
   dateToInput.value = initial.toDate ? formatDateForInput(new Date(initial.toDate)) : formatDateForInput(new Date());
-  const dateToGroup = createParamGroup('Дата до', dateToInput);
+  const dateToGroup = createParamGroup('Дата до', dateToInput, 'dateTo');
 
   const dateFormatSelect = document.createElement('select');
   dateFormatSelect.className = 'date-format-select';
@@ -1007,7 +1014,7 @@ function createColumnRow(initial = {}) {
     dateFormatSelect.appendChild(option);
   });
   dateFormatSelect.value = initial.dateFormat || DATE_FORMATS.ISO_8601;
-  const dateFormatGroup = createParamGroup('Формат даты', dateFormatSelect);
+  const dateFormatGroup = createParamGroup('Формат даты', dateFormatSelect, 'dateFormat');
 
   // Параметры цвета
   const colorFormatSelect = document.createElement('select');
@@ -1019,7 +1026,7 @@ function createColumnRow(initial = {}) {
     colorFormatSelect.appendChild(option);
   });
   colorFormatSelect.value = initial.colorFormat || COLOR_FORMATS.HEX;
-  const colorFormatGroup = createParamGroup('Формат цвета', colorFormatSelect);
+  const colorFormatGroup = createParamGroup('Формат цвета', colorFormatSelect, 'colorFormat');
 
   const transparencyCheckbox = document.createElement('input');
   transparencyCheckbox.type = 'checkbox';
@@ -1032,7 +1039,7 @@ function createColumnRow(initial = {}) {
   transparencyContainer.style.alignItems = 'center';
   transparencyContainer.style.gap = '6px';
   transparencyContainer.append(transparencyCheckbox, transparencyLabel);
-  const transparencyGroup = createParamGroup('Прозрачность', transparencyContainer);
+  const transparencyGroup = createParamGroup('Прозрачность', transparencyContainer, 'transparency');
 
   // Параметры IP
   const ipFormatSelect = document.createElement('select');
@@ -1049,7 +1056,7 @@ function createColumnRow(initial = {}) {
     ipFormatSelect.appendChild(option);
   });
   ipFormatSelect.value = initial.ipFormat || IP_FORMATS.IPV4;
-  const ipFormatGroup = createParamGroup('Формат IP-адреса', ipFormatSelect);
+  const ipFormatGroup = createParamGroup('Формат IP-адреса', ipFormatSelect, 'ipFormat');
 
   // Параметры MAC
   const macFormatSelect = document.createElement('select');
@@ -1066,7 +1073,7 @@ function createColumnRow(initial = {}) {
     macFormatSelect.appendChild(option);
   });
   macFormatSelect.value = initial.macFormat || 'colon';
-  const macFormatGroup = createParamGroup('Формат MAC-адреса', macFormatSelect);
+  const macFormatGroup = createParamGroup('Формат MAC-адреса', macFormatSelect, 'macFormat');
 
   // Параметры телефона
   const phoneFormatSelect = document.createElement('select');
@@ -1083,7 +1090,7 @@ function createColumnRow(initial = {}) {
     phoneFormatSelect.appendChild(opt);
   });
   phoneFormatSelect.value = initial.phoneFormat || 'dashed';
-  const phoneFormatGroup = createParamGroup('Формат телефона', phoneFormatSelect);
+  const phoneFormatGroup = createParamGroup('Формат телефона', phoneFormatSelect, 'phoneFormat');
   phoneFormatGroup.classList.add('phone-format-group');
 
   // Параметры кастомного списка
@@ -1093,14 +1100,14 @@ function createColumnRow(initial = {}) {
   customListTextarea.rows = 3;
   customListTextarea.cols = 20;
   customListTextarea.value = (initial.customList || []).join('\n');
-  const customListGroup = createParamGroup('Список значений', customListTextarea);
+  const customListGroup = createParamGroup('Список значений', customListTextarea, 'customList');
 
   const customListSeparatorInput = document.createElement('input');
   customListSeparatorInput.type = 'text';
   customListSeparatorInput.placeholder = 'Разделитель (по умолчанию — перенос строки)';
   customListSeparatorInput.className = 'custom-list-separator';
   customListSeparatorInput.value = initial.customSeparator || '';
-  const customSeparatorGroup = createParamGroup('Разделитель', customListSeparatorInput);
+  const customSeparatorGroup = createParamGroup('Разделитель', customListSeparatorInput, 'customSeparator');
 
   const customListModeSelect = document.createElement('select');
   [
@@ -1115,7 +1122,7 @@ function createColumnRow(initial = {}) {
   });
   customListModeSelect.className = 'custom-list-mode';
   customListModeSelect.value = initial.customListMode || 'random';
-  const customModeGroup = createParamGroup('Режим выбора', customListModeSelect);
+  const customModeGroup = createParamGroup('Режим выбора', customListModeSelect, 'customMode');
 
   // Параметры случайной строки
   const randomStringBaseInput = document.createElement('input');
@@ -1125,7 +1132,7 @@ function createColumnRow(initial = {}) {
   randomStringBaseInput.value =
     initial.baseText ||
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
-  const baseTextGroup = createParamGroup('Базовый текст', randomStringBaseInput);
+  const baseTextGroup = createParamGroup('Базовый текст', randomStringBaseInput, 'baseText');
 
   const randomStringLengthInput = document.createElement('input');
   randomStringLengthInput.type = 'number';
@@ -1133,7 +1140,7 @@ function createColumnRow(initial = {}) {
   randomStringLengthInput.className = 'random-string-length';
   randomStringLengthInput.value = initial.maxLength || 10;
   randomStringLengthInput.min = 0;
-  const maxLengthGroup = createParamGroup('Макс. длина', randomStringLengthInput);
+  const maxLengthGroup = createParamGroup('Макс. длина', randomStringLengthInput, 'maxLength');
 
   // Параметры преобразования
   const transformationFormulaTextarea = document.createElement('textarea');
@@ -1142,7 +1149,7 @@ function createColumnRow(initial = {}) {
   transformationFormulaTextarea.rows = 3;
   transformationFormulaTextarea.cols = 24;
   transformationFormulaTextarea.value = initial.transformFormula || '';
-  const transformationFormulaGroup = createParamGroup('Формула', transformationFormulaTextarea);
+  const transformationFormulaGroup = createParamGroup('Формула', transformationFormulaTextarea, 'transformationFormula');
 
   // --- Вероятность null ---
   const nullProbContainer = document.createElement('div');
@@ -1163,6 +1170,7 @@ function createColumnRow(initial = {}) {
   nullProbContainer.appendChild(nullProbabilityInput);
   const nullProbGroup = document.createElement('div');
   nullProbGroup.className = 'param-group';
+  nullProbGroup.dataset.paramKey = 'nullProbability';
   nullProbGroup.appendChild(nullProbContainer);
 
   // Добавление всех параметров
@@ -1188,36 +1196,8 @@ function createColumnRow(initial = {}) {
   );
   row.appendChild(paramsContainer);
 
-  // Обновление видимости параметров при смене типа
-  function updateFieldVisibility() {
-    const t = typeSelectWrapper.getValue();
-    const showGroup = (group, condition) => {
-      group.style.display = condition ? 'block' : 'none';
-    };
-    showGroup(minGroup, t === TYPES.INTEGER || t === TYPES.FLOAT);
-    showGroup(maxGroup, t === TYPES.INTEGER || t === TYPES.FLOAT);
-    showGroup(precisionGroup, t === TYPES.FLOAT);
-    showGroup(dateFromGroup, t === TYPES.DATE);
-    showGroup(dateToGroup, t === TYPES.DATE);
-    showGroup(dateFormatGroup, t === TYPES.DATE);
-    showGroup(colorFormatGroup, t === TYPES.COLOR);
-    showGroup(transparencyGroup, t === TYPES.COLOR);
-    showGroup(countriesMultiSelectContainer, t === TYPES.REGION);
-    showGroup(ipFormatGroup, t === TYPES.IP);
-    showGroup(macFormatGroup, t === TYPES.MAC_ADDRESS);
-    showGroup(phoneFormatGroup, t === TYPES.PHONE);
-    showGroup(customListGroup, t === TYPES.CUSTOM_LIST);
-    showGroup(customSeparatorGroup, t === TYPES.CUSTOM_LIST);
-    const isFileColumn = t.startsWith('file_') && t.includes('_col_');
-    showGroup(customModeGroup, t === TYPES.CUSTOM_LIST || isFileColumn);
-    showGroup(baseTextGroup, t === TYPES.RANDOM_LENGTH_STRING);
-    showGroup(maxLengthGroup, t === TYPES.RANDOM_LENGTH_STRING);
-    showGroup(transformationFormulaGroup, t === TYPES.TRANSFORMATION);
-    nullProbGroup.style.display = 'block';
-  }
-
   // Инициализация видимости
-  updateFieldVisibility();
+  updateFieldVisibility(row);
 
   // Кнопка удаления
   const removeBtn = document.createElement('button');
@@ -1706,6 +1686,21 @@ async function handleGenerate() {
   }
 }
 
+function updateCsvSeparatorVisibility() {
+  const separatorRow = document.getElementById('separatorRow');
+  if (!separatorRow || !formatSelect) return;
+  separatorRow.style.display = formatSelect.value === 'csv' ? 'flex' : 'none';
+}
+
+function handleGenerationTypeChange({ withHistory = true } = {}) {
+  refreshRegionCountrySelectors();
+  refreshAllTypeSelects();
+  updatePreview();
+  if (withHistory) {
+    saveToHistory();
+  }
+}
+
 // Обработка drag-and-drop для сортировки столбцов
 columnsList.addEventListener('dragover', e => {
   e.preventDefault();
@@ -1758,26 +1753,14 @@ generateBtn.addEventListener('click', () =>
 refreshPreviewBtn?.addEventListener('click', updatePreview);
 rowsCountInput?.addEventListener('input', saveToHistory);
 filenameBaseInput?.addEventListener('input', saveToHistory);
-formatSelect?.addEventListener('change', saveToHistory);
+formatSelect?.addEventListener('change', () => {
+  updateCsvSeparatorVisibility();
+  updatePreview();
+  saveToHistory();
+});
 languageSelect?.addEventListener('change', () => {
   updatePreview();
   saveToHistory();
-});
-generationTypeSelect?.addEventListener('change', () => {
-  refreshRegionCountrySelectors();
-  refreshAllTypeSelects();
-  updatePreview();
-  saveToHistory();
-});
-
-formatSelect?.addEventListener('change', () => {
-  const separatorRow = document.getElementById('separatorRow');
-  if (formatSelect.value === 'csv') {
-    separatorRow.style.display = 'flex';
-  } else {
-    separatorRow.style.display = 'none';
-  }
-  updatePreview();
 });
 
 // Работа с настройками (сохранение/загрузка)
@@ -1964,12 +1947,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (generationTypeSelect) {
-    generationTypeSelect.addEventListener('change', () => {
-      refreshRegionCountrySelectors();
-      refreshAllTypeSelects();
-      updatePreview();
-    });
+    generationTypeSelect.addEventListener('change', () => handleGenerationTypeChange({ withHistory: true }));
   }
+  updateCsvSeparatorVisibility();
   setTimeout(updatePreview, 100);
   setTimeout(() => {
     saveToHistory();

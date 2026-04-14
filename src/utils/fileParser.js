@@ -223,7 +223,7 @@ function parseJSON(text) {
     return headers.map(key => {
       // Для случая, когда ключ - Column N, но исходный объект не имеет такого ключа
       // (это может произойти при несовпадении структуры), возвращаем ''
-      if (key.startsWith('Column ') && !obj.hasOwnProperty(key)) {
+      if (key.startsWith('Column ') && !Object.prototype.hasOwnProperty.call(obj, key)) {
         // Попытка сопоставить по индексу: берём значения по порядку
         const objKeys = Object.keys(obj);
         const idx = headers.indexOf(key);

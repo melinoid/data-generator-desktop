@@ -53,6 +53,10 @@ const dataSourceFileBtn = document.getElementById('dataSourceFileBtn');
 let dataSourceCache = [];
 const originalTitle = document.title;
 
+let formulaModal = null;
+let formulaInput = null;
+let currentFormulaRow = null;
+
 // Обработчик выбора файла-источника данных
 dataSourceFileBtn?.addEventListener('click', () => {
   dataSourceFileInput?.click();
@@ -253,7 +257,6 @@ function createCustomTypeSelect(initialValue = TYPES.ID_AUTO, onValueChange = nu
     'Текстовые данные': [
       { value: TYPES.RANDOM_LENGTH_STRING, text: 'Строка случайной длины' },
       { value: TYPES.CUSTOM_LIST, text: 'Кастомный список' },
-      { value: TYPES.TRANSFORMATION, text: 'Преобразования' },
       { value: TYPES.EMPTY_STRING, text: 'Всегда пустая строка' },
       { value: TYPES.NULL, text: 'Всегда null' },
       { value: TYPES.NAUGHTY_STRINGS, text: 'Капризные строки' },
@@ -556,7 +559,6 @@ const PARAM_VISIBILITY_RULES = {
   customMode: type => type === TYPES.CUSTOM_LIST || (type.startsWith('file_') && type.includes('_col_')),
   baseText: type => type === TYPES.RANDOM_LENGTH_STRING,
   maxLength: type => type === TYPES.RANDOM_LENGTH_STRING,
-  transformationFormula: type => type === TYPES.TRANSFORMATION,
   nullProbability: () => true,
 };
 
@@ -1142,20 +1144,7 @@ function createColumnRow(initial = {}) {
   randomStringLengthInput.min = 0;
   const maxLengthGroup = createParamGroup('Макс. длина', randomStringLengthInput, 'maxLength');
 
-  // Параметры преобразования
-  const transformationFormulaTextarea = document.createElement('textarea');
-  transformationFormulaTextarea.placeholder = 'Пример: row["столбец1"] + row["столбец2"] или Number(col("сумма")) * 10';
-  transformationFormulaTextarea.className = 'transform-formula-textarea';
-  transformationFormulaTextarea.rows = 3;
-  transformationFormulaTextarea.cols = 24;
-  transformationFormulaTextarea.value = initial.transformFormula || '';
-  const transformationFormulaGroup = createParamGroup(
-    'Формула',
-    transformationFormulaTextarea,
-    'transformationFormula'
-  );
-
-  // --- Вероятность null ---
+  // Вероятность null
   const nullProbContainer = document.createElement('div');
   nullProbContainer.style.display = 'flex';
   nullProbContainer.style.flexDirection = 'column';
@@ -1195,7 +1184,6 @@ function createColumnRow(initial = {}) {
     customModeGroup,
     baseTextGroup,
     maxLengthGroup,
-    transformationFormulaGroup,
     nullProbGroup
   );
   row.appendChild(paramsContainer);
@@ -1203,12 +1191,50 @@ function createColumnRow(initial = {}) {
   // Инициализация видимости
   updateFieldVisibility(row);
 
-  // Кнопка удаления
+  // Кнопка "fx" для пользовательского преобразования
+  const fxBtn = document.createElement('button');
+  fxBtn.type = 'button';
+  fxBtn.className = 'fx-btn';
+  fxBtn.textContent = 'fx';
+  fxBtn.title = 'Добавить преобразование значения';
+
+  fxBtn.addEventListener('click', () => {
+    currentFormulaRow = row;
+
+    if (formulaModal && formulaInput) {
+      const existingFormula = row.dataset.transformFormula || '';
+      formulaInput.value = existingFormula;
+
+      const modalTitle = formulaModal.querySelector('.formula-modal-header h3');
+      const nameInput = row.querySelector('input[placeholder="Название столбца"]');
+      if (modalTitle && nameInput) {
+        const colIdx = Array.from(columnsList.children).indexOf(row);
+        const columnName = nameInput.value.trim() || `Столбец ${colIdx + 1}`;
+        modalTitle.textContent = `Преобразование: ${columnName}`;
+      }
+
+      formulaModal.classList.add('show');
+      setTimeout(() => formulaInput.focus(), 100);
+    }
+  });
+
+  // Восстановление состояния кнопки при загрузке из сохранённой конфигурации
+  if (initial.transformFormula) {
+    fxBtn.classList.add('active');
+    fxBtn.title = `Формула: ${initial.transformFormula}`;
+    row.dataset.transformFormula = initial.transformFormula;
+  }
+
+  row.appendChild(fxBtn);
+  // ==========================================================
+
+  // === Кнопка удаления столбца ===
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'remove-column-btn';
   removeBtn.title = 'Удалить столбец';
   removeBtn.setAttribute('aria-label', 'Удалить столбец');
+
   const trashIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   trashIcon.setAttribute('width', '16');
   trashIcon.setAttribute('height', '16');
@@ -1218,12 +1244,14 @@ function createColumnRow(initial = {}) {
   trashIcon.setAttribute('stroke-width', '2');
   trashIcon.setAttribute('stroke-linecap', 'round');
   trashIcon.setAttribute('stroke-linejoin', 'round');
+
   const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path1.setAttribute('d', 'M3 6h18');
   const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path2.setAttribute('d', 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2');
   trashIcon.appendChild(path1);
   trashIcon.appendChild(path2);
+
   removeBtn.appendChild(trashIcon);
   removeBtn.addEventListener('click', () => {
     row.remove();
@@ -1231,7 +1259,9 @@ function createColumnRow(initial = {}) {
     updatePreview();
     saveToHistory();
   });
+
   row.appendChild(removeBtn);
+  // ==================================
 
   setupDragAndDrop(row);
 
@@ -1453,12 +1483,16 @@ function readConfigFromUI() {
     } else if (type === TYPES.RANDOM_LENGTH_STRING) {
       config.baseText = params.querySelector('.random-string-base')?.value || '';
       config.maxLength = Number(params.querySelector('.random-string-length')?.value) || 10;
-    } else if (type === TYPES.TRANSFORMATION) {
-      config.transformFormula = params.querySelector('.transform-formula-textarea')?.value || '';
     }
 
     const nullProb = params.querySelector('.null-probability');
     config.nullProbability = Math.max(0, Math.min(100, Number(nullProb?.value) || 0));
+
+    // Чтение формулы пользовательского преобразования
+    if (row.dataset.transformFormula) {
+      config.transformFormula = row.dataset.transformFormula;
+    }
+
     return config;
   });
 
@@ -1861,6 +1895,17 @@ function applyConfig(config) {
 
       const newRow = createColumnRow(col);
       columnsList.appendChild(newRow);
+
+      // Восстановление формулы преобразования
+      if (col.transformFormula) {
+        newRow.dataset.transformFormula = col.transformFormula;
+        const fxBtn = newRow.querySelector('.fx-btn');
+        if (fxBtn) {
+          fxBtn.classList.add('active');
+          fxBtn.title = `Формула: ${col.transformFormula}`;
+        }
+      }
+
       rowsToCreate.push(newRow);
 
       // Сохраняем inheritFrom для последующего применения
@@ -1981,9 +2026,58 @@ loadSettingsBtn?.addEventListener('click', async () => {
     } else {
       alert('Ошибка загрузки: ' + err.message);
     }
-    // ================================================
   }
 });
+
+function initFormulaModal() {
+  formulaModal = document.getElementById('formulaModal');
+  formulaInput = document.getElementById('formulaInput');
+  const closeBtn = document.getElementById('closeFormulaModal');
+  const cancelBtn = document.getElementById('cancelFormulaBtn');
+  const saveBtn = document.getElementById('saveFormulaBtn');
+
+  if (!formulaModal) return;
+
+  const closeModal = () => {
+    formulaModal.classList.remove('show');
+    currentFormulaRow = null;
+  };
+
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+
+  formulaModal.addEventListener('click', e => {
+    if (e.target === formulaModal) closeModal();
+  });
+
+  saveBtn?.addEventListener('click', () => {
+    if (currentFormulaRow && formulaInput) {
+      const formula = formulaInput.value.trim();
+      currentFormulaRow.dataset.transformFormula = formula;
+
+      const fxBtn = currentFormulaRow.querySelector('.fx-btn');
+      if (fxBtn) {
+        if (formula) {
+          fxBtn.classList.add('active');
+          fxBtn.title = `Формула: ${formula}`;
+        } else {
+          fxBtn.classList.remove('active');
+          fxBtn.title = 'Добавить преобразование';
+        }
+      }
+
+      closeModal();
+      updatePreview();
+      saveToHistory();
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && formulaModal?.classList.contains('show')) {
+      closeModal();
+    }
+  });
+}
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
@@ -2000,6 +2094,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Инициализация остального UI
   generationTypeSelect = document.getElementById('generationType');
+
+  initFormulaModal();
 
   const savedConfig = loadConfigFromLocalStorage();
   if (savedConfig) {

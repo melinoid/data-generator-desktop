@@ -137,6 +137,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Formula Transformation Modal -->
+    <div id="formulaModal" class="modal">
+      <div class="formula-modal-content">
+        <div class="formula-modal-header">
+          <h3>Преобразование значения</h3>
+          <button class="close-btn" id="closeFormulaModal">&times;</button>
+        </div>
+        <div class="formula-modal-body">
+          <textarea
+            id="formulaInput"
+            class="formula-textarea"
+            placeholder='Пример: value.toUpperCase() или row["цена"] * 1.2'
+          ></textarea>
+          <div class="formula-hint">
+            <strong>Доступные переменные:</strong><br />
+            <code>value</code> — текущее сгенерированное значение этого поля<br />
+            <code>row</code> — объект со всеми значениями строки (доступ: <code>row["имя_столбца"]</code>)<br />
+            <code>col(name)</code> — функция для безопасного получения значения столбца
+          </div>
+        </div>
+        <div class="formula-modal-footer">
+          <button class="btn-cancel" id="cancelFormulaBtn">Отмена</button>
+          <button class="btn-save" id="saveFormulaBtn">Применить</button>
+        </div>
+      </div>
+    </div>
+
     <script src="renderer.js"></script>
   </body>
 </html>

@@ -41,7 +41,6 @@ const TYPES = {
   PHONE: 'phone',
   CUSTOM_LIST: 'custom_list',
   RANDOM_LENGTH_STRING: 'random_length_string',
-  TRANSFORMATION: 'transformation',
   FILE_COLUMN: 'file_column',
 };
 
@@ -141,20 +140,26 @@ function getRandomValueFromArray(array) {
   return array[Math.floor(paretoRandom(0, array.length - 1))];
 }
 
-function evaluateTransformationFormula(formula, row) {
+/**
+ * Вычисляет значение по формуле преобразования.
+ * @param {string} formula - Формула для вычисления.
+ * @param {Object} row - Объект строки со значениями.
+ * @param {*} currentValue - Текущее значение поля (доступно в формуле как 'value').
+ * @returns {*} Результат вычисления.
+ */
+function evaluateTransformationFormula(formula, row, currentValue = null) {
   const expression = String(formula || '').trim();
-  if (!expression) return '';
+  if (!expression) return currentValue ?? '';
 
   const col = name => row[String(name)] ?? '';
 
   try {
-    // JS-выражение с доступом к текущей строке через row/col:
-    // row["A"] + row["B"] или Number(col("A")) * 10
-    const evaluator = new Function('row', 'col', `"use strict"; return (${expression});`);
-    const value = evaluator(row, col);
-    return value ?? '';
+    // JS-выражение с доступом к row, col, value
+    const evaluator = new Function('row', 'col', 'value', `"use strict"; return (${expression});`);
+    const result = evaluator(row, col, currentValue);
+    return result ?? currentValue ?? '';
   } catch {
-    return '';
+    return currentValue ?? '';
   }
 }
 
@@ -1307,23 +1312,23 @@ function buildRowObject(
         row[header] = baseText.substring(0, randomLength);
         break;
       }
-      case TYPES.TRANSFORMATION:
-        row[header] = '';
-        break;
       default:
         row[header] = '';
     }
     columnValues[i] = row[header];
   }
 
-  // Применение формул после генерации всех значений в строке
+  // Универсальное применение формул преобразования
   for (let i = 0; i < columns.length; i++) {
     const col = columns[i];
-    if (col.type !== TYPES.TRANSFORMATION) continue;
     const header = headers[i];
-    const transformedValue = evaluateTransformationFormula(col.transformFormula, row);
-    row[header] = transformedValue;
-    columnValues[i] = transformedValue;
+
+    if (!col.transformFormula) continue;
+    if (row[header] === undefined) continue;
+
+    const originalValue = row[header];
+    row[header] = evaluateTransformationFormula(col.transformFormula, row, originalValue);
+    columnValues[i] = row[header];
   }
 
   // Применение вероятности null

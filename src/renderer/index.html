@@ -152,10 +152,14 @@
             placeholder='Пример: value.toUpperCase() или row["цена"] * 1.2'
           ></textarea>
           <div class="formula-hint">
-            <strong>Доступные переменные:</strong><br />
-            <code>value</code> — текущее сгенерированное значение этого поля<br />
-            <code>row</code> — объект со всеми значениями строки (доступ: <code>row["имя_столбца"]</code>)<br />
-            <code>col(name)</code> — функция для безопасного получения значения столбца
+            <strong>Доступные переменные и функции:</strong><br />
+            <code>value</code> — текущее сгенерированное значение поля<br />
+            <code>row</code> — объект всей строки (<code>row["цена"]</code>)<br />
+            <code>col(name)</code> — безопасное получение значения столбца<br />
+            <code>IF(условие, да, нет)</code> — условная логика (вложенная поддерживается)<br />
+            <em>Примеры:</em><br />
+            <code>IF(value > 100, "Высокий", "Низкий")</code><br />
+            <code>row["скидка"] ? value * 0.9 : value</code>
           </div>
         </div>
         <div class="formula-modal-footer">

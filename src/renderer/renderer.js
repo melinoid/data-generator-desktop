@@ -1149,7 +1149,11 @@ function createColumnRow(initial = {}) {
   transformationFormulaTextarea.rows = 3;
   transformationFormulaTextarea.cols = 24;
   transformationFormulaTextarea.value = initial.transformFormula || '';
-  const transformationFormulaGroup = createParamGroup('Формула', transformationFormulaTextarea, 'transformationFormula');
+  const transformationFormulaGroup = createParamGroup(
+    'Формула',
+    transformationFormulaTextarea,
+    'transformationFormula'
+  );
 
   // --- Вероятность null ---
   const nullProbContainer = document.createElement('div');
@@ -1526,18 +1530,26 @@ function generatePreviewData() {
       ...col,
       name: col.__uniqueName,
     }));
-    const row = buildRowObject(
-      tempColumns,
-      i,
-      dataSources.countriesData,
-      dataSources.citiesData,
-      dataSources.genderData,
-      dataSources.namesData,
-      dataSources.regionsData,
-      dataSources.streetsData,
-      config.language,
-      dataSourceCache
-    );
+
+    let row;
+    try {
+      row = buildRowObject(
+        tempColumns,
+        i,
+        dataSources.countriesData,
+        dataSources.citiesData,
+        dataSources.genderData,
+        dataSources.namesData,
+        dataSources.regionsData,
+        dataSources.streetsData,
+        config.language,
+        dataSourceCache
+      );
+    } catch (buildErr) {
+      console.warn('Пропуск строки предпросмотра из-за ошибки:', buildErr);
+      row = {};
+    }
+
     const rowData = uniqueColumns.map(col => {
       const value = row[col.__uniqueName];
       if (value === null) return 'null';
@@ -1814,6 +1826,8 @@ function applyConfig(config) {
   filenameBaseInput.value = config.filenameBase || 'data';
   rowsCountInput.value = config.rowsCount || 10;
   formatSelect.value = config.format || 'csv';
+  updateCsvSeparatorVisibility();
+
   languageSelect.value = config.language || 'ru';
   generationTypeSelect.value = config.generationType || 'advanced';
 
@@ -1823,7 +1837,7 @@ function applyConfig(config) {
 
   if (Array.isArray(config.columns)) {
     config.columns.forEach((col, idx) => {
-      if (col.type.startsWith('file_') && col.type.includes('_col_')) {
+      if (col.type?.startsWith('file_') && col.type.includes('_col_')) {
         const matchedSource = dataSourceCache.find(src => src.name === col.sourceName);
         if (matchedSource) {
           const parts = col.type.split('_');
@@ -1836,9 +1850,14 @@ function applyConfig(config) {
             col._phantom = true;
           }
         } else {
+          // Источник не найден - помечаем как фантом и задаём безопасные дефолты
           col._phantom = true;
+          if (!col.customListMode) col.customListMode = 'random';
+          if (col.sourceName === undefined) col.sourceName = '';
+          if (col.columnName === undefined) col.columnName = '';
         }
       }
+      // =======================================================
 
       const newRow = createColumnRow(col);
       columnsList.appendChild(newRow);
@@ -1906,18 +1925,63 @@ loadSettingsBtn?.addEventListener('click', async () => {
   try {
     const content = await window.api.readFile(filePaths[0]);
     const config = JSON.parse(content);
+
+    if (config?.columns) {
+      config.columns.forEach(col => {
+        if (col.type?.startsWith('file_') && col.type.includes('_col_')) {
+          const sourceExists = dataSourceCache.some(
+            src => src.name === col.sourceName || col.type.startsWith(`file_${src.key}_`)
+          );
+          if (!sourceExists) {
+            col._phantom = true;
+            if (!col.customListMode) col.customListMode = 'random';
+          }
+        }
+      });
+    }
+
     applyConfig(config);
+
     try {
       localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(config));
     } catch (err) {
-      console.warn('Не удалось сохранить загруженные настройки в localStorage:', err);
+      console.warn('Не удалось сохранить настройки в localStorage:', err);
     }
     history = [config];
     historyIndex = 0;
-    alert('Настройки загружены из: ' + filePaths[0]);
+
+    const hasPhantom = config.columns?.some(col => col._phantom);
+    if (hasPhantom) {
+      alert(
+        '⚠️ Настройки загружены, но некоторые источники данных отсутствуют.\nДобавьте необходимые файлы через "Источники данных" для полной работы.'
+      );
+    } else {
+      alert('Настройки загружены из: ' + filePaths[0]);
+    }
   } catch (err) {
     console.error(err);
-    alert('Ошибка загрузки: ' + err.message);
+    if (err.message?.includes('JSON должен быть массивом объектов')) {
+      try {
+        const content = await window.api.readFile(filePaths[0]);
+        const config = JSON.parse(content);
+        if (config?.columns) {
+          config.columns.forEach(col => {
+            if (col.type?.startsWith('file_') && col.type.includes('_col_')) {
+              col._phantom = true;
+              if (!col.customListMode) col.customListMode = 'random';
+            }
+          });
+        }
+        applyConfig(config);
+        alert('Настройки применены с предупреждениями: некоторые источники данных не найдены.');
+      } catch (fallbackErr) {
+        console.error(fallbackErr);
+        alert('Критическая ошибка загрузки: ' + fallbackErr.message);
+      }
+    } else {
+      alert('Ошибка загрузки: ' + err.message);
+    }
+    // ================================================
   }
 });
 
@@ -2049,8 +2113,7 @@ async function checkForUpdatesOnLoad() {
       showUpdateModal(result);
       markTitleAsHasUpdate();
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 }
 
 // Показ модального окна обновления
@@ -2082,7 +2145,7 @@ function showUpdateModal(updateInfo) {
   closeModalBtn.onclick = closeModal;
 
   // Закрытие по клику вне модального окна
-  modal.onclick = (e) => {
+  modal.onclick = e => {
     if (e.target === modal) {
       closeModal();
     }

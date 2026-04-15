@@ -44,7 +44,7 @@ jobs:
           node scripts/syncVersion.js
           git add package.json README.md src/renderer/index.html
           VERSION="$(node -p "require('./package.json').version")"
-          git commit -m "chore(release): v$VERSION"
+          git commit -m "Release: v$VERSION"
           git tag "v$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"

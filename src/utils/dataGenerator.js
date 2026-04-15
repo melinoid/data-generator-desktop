@@ -142,9 +142,10 @@ function getRandomValueFromArray(array) {
 
 /**
  * Вычисляет значение по формуле преобразования.
+ * Поддерживает: value, row, col(name), IF(condition, trueVal, falseVal)
  * @param {string} formula - Формула для вычисления.
  * @param {Object} row - Объект строки со значениями.
- * @param {*} currentValue - Текущее значение поля (доступно в формуле как 'value').
+ * @param {*} currentValue - Текущее значение поля (доступно как 'value').
  * @returns {*} Результат вычисления.
  */
 function evaluateTransformationFormula(formula, row, currentValue = null) {
@@ -152,13 +153,18 @@ function evaluateTransformationFormula(formula, row, currentValue = null) {
   if (!expression) return currentValue ?? '';
 
   const col = name => row[String(name)] ?? '';
+  const value = currentValue;
+
+  // Excel-подобная функция IF
+  const IF = (condition, trueVal, falseVal) => (condition ? trueVal : falseVal);
 
   try {
-    // JS-выражение с доступом к row, col, value
-    const evaluator = new Function('row', 'col', 'value', `"use strict"; return (${expression});`);
-    const result = evaluator(row, col, currentValue);
+    // В область видимости добавлены: row, col, value, IF
+    const evaluator = new Function('row', 'col', 'value', 'IF', `"use strict"; return (${expression});`);
+    const result = evaluator(row, col, value, IF);
     return result ?? currentValue ?? '';
-  } catch {
+  } catch (e) {
+    console.warn(`⚠️ Ошибка в формуле "${expression.slice(0, 50)}...":`, e.message);
     return currentValue ?? '';
   }
 }

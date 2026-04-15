@@ -868,6 +868,123 @@ html.dark-theme .help-btn:hover {
   background: var(--bg-row);
 }
 
+/* Кнопка преобразований */
+.fx-btn {
+  cursor: pointer;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.fx-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--btn-info);
+  color: var(--btn-info);
+}
+
+.fx-btn.active {
+  background: var(--btn-info);
+  color: white;
+  border-color: var(--btn-info);
+}
+
+html.dark-theme .fx-btn.active {
+  color: white;
+}
+
+/* Модальное окно формулы */
+#formulaModal {
+  display: none;
+}
+
+#formulaModal.show {
+  display: flex;
+}
+
+.formula-modal-content {
+  background: var(--bg-container);
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-modal);
+}
+
+.formula-modal-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.formula-modal-header h3 {
+  font-size: 16px;
+}
+
+.formula-modal-body {
+  padding: 16px;
+}
+
+.formula-textarea {
+  min-width: 100%;
+  height: 100%;
+  max-height: 450px;
+  font-family: monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.formula-hint {
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--code-bg);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.formula-hint code {
+  background: var(--pre-bg);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.formula-modal-footer {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.formula-modal-footer button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.formula-modal-footer .btn-cancel {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.formula-modal-footer .btn-save {
+  background: var(--btn-success);
+  color: white;
+}
+
+.formula-modal-footer .btn-save:hover {
+  background: var(--btn-success-hover);
+}
+
 /* Всплывающее уведомление при копировании из таблицы предпросмотра */
 .copy-tooltip {
   position: fixed;

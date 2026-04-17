@@ -82,12 +82,24 @@ jobs:
         if: runner.os == 'macOS'
         run: npx electron-builder --mac
 
+      - name: Organize artifacts for Windows
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p dist/windows
+          Move-Item -Path "dist/*.exe" -Destination "dist/windows/" -ErrorAction SilentlyContinue
+
+      - name: Organize artifacts for macOS
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dist/macos
+          mv dist/*.zip dist/macos/ 2>/dev/null || true
+
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.bump-version-and-tag.outputs.tag }}
           files: |
-            dist/*.exe
-            dist/*.zip
+            dist/windows/*.exe
+            dist/macos/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
